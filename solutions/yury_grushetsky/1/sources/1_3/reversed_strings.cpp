@@ -5,9 +5,7 @@
 
 using namespace std;
 
-/*
-** removes from s all occuraces of letters in t
-*/
+// removes from s all occuraces of letters in t
 void strip_all(string& s, const string& t)
 {
 	string::size_type n = t.length();
