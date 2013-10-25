@@ -1,12 +1,13 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <string>
 
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/array.hpp>
+
+#include <reader.h>
 
 typedef boost::shared_ptr< std::string > string;
 typedef boost::scoped_ptr< std::string > string_ptr;
@@ -29,9 +30,19 @@ int_array f3()
 	return a;
 }
 
+class inf
+{
+public:
+	int a;
+	inf(int n) :a(n){}
+	void close() {std::cout << a++ << " Yyyeeeees!" << std::endl;}
+	~inf() {close();}
+};
 
 int main()
 {
+	boost::shared_ptr< inf> p( new inf(5));
+	p->close();
 	std::ifstream input_file( BINARY_DIR "/2.4_example.in", std::ifstream::binary);
 	char buf[100];
 	if(input_file && !input_file.eof())
@@ -46,8 +57,21 @@ int main()
 		std::cout << "LEN=" << LEN << std::endl;
 		std::cout << "MSG=" << buf << std::endl;
 	}
+	//input_file.close();
+	
+	//std::ifstream input_file( BINARY_DIR "/2.4_example.in", std::ifstream::binary);
+	if(input_file && !input_file.eof())
+	{
+		binary_reader::Message msg;
+		input_file >> msg;
+		std::cout << "TIME=" << msg.get_time() << std::endl;
+	}
 	input_file.close();
 
+	{
+		boost::shared_ptr<std::ofstream> ofs( new std::ofstream( BINARY_DIR "/out.txt"));
+		*ofs << "hi" << std::endl;
+	}
 	{
 		string s = f();
 		string s2 = s;
