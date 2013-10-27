@@ -1,50 +1,88 @@
-
 #include <string>
 #include <iostream>
+#include <fstream>
+#include <map>
 
+#include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/array.hpp>
 
-typedef boost::shared_ptr< std::string > string;
-typedef boost::scoped_ptr< std::string > string_ptr;
-typedef boost::array< int, 100 > int_array;
+#include <reader.h>
 
-string f()
+using namespace binary_reader;
+
+class Buffer
 {
-	return string( new std::string( "hello shared world" ) );
+    static const boost::uint32_t BUFFER_SIZE = 2048u;
+    std::map<boost::uint32_t, boost::uint32_t> cur_buf;
+    std::map<boost::uint32_t, boost::uint32_t> total_msg;
+    std::map<boost::uint32_t, boost::uint32_t> total_sec;
+    boost::uint32_t cur_sec;
+    void next_sec(boost::uint32_t sec);
+
+public:
+    void clear();
+    Buffer& operator <<(Message const& msg);
+    std::map<boost::uint32_t, double> get_average() ;//const;
+};
+
+void Buffer::next_sec(boost::uint32_t sec)
+{
+    cur_sec = sec;
+    cur_buf.clear();
 }
 
-void f2( string_ptr& ptr )
+void Buffer::clear()
 {
-	return ptr.reset( new std::string( "wow wow" ) );
+    cur_sec = 0;
+    cur_buf.clear();
+    total_msg.clear();
+    total_sec.clear();
 }
 
-int_array f3()
+Buffer& Buffer::operator <<(Message const& msg)
 {
-	int_array a;
-	a[ 5 ] = 15;
-	return a;
+    if (msg.get_time() > cur_sec)
+        next_sec(msg.get_time());
+    boost::uint32_t type = msg.get_type();
+    if (cur_buf.count(type)==0u)
+        ++total_sec[type];
+    if (cur_buf[type]<BUFFER_SIZE)
+    {
+        ++cur_buf[type];
+        ++total_msg[type];
+    }
+    return (*this);
 }
 
+std::map<boost::uint32_t, double> Buffer::get_average() //const
+{
+    std::map<boost::uint32_t, double> result;
+    for( std::map<boost::uint32_t, boost::uint32_t>::iterator it = total_sec.begin(); it!=total_sec.end(); ++it)
+        result[it->first] = ((double)total_msg[it->first])/((double)it->second);
+    return result;
+}
 
 int main()
 {
-	{
-		string s = f();
-		string s2 = s;
-		std::cout << s2->c_str() << std::endl;
-	}
-	{
-		string_ptr ps;
-		f2( ps );
-		std::cout << ps->c_str() << std::endl;
+    //show_Message_binary_file_contents(BINARY_DIR "/2.5_example.in");
+    //std::cout << std::endl;
+    Buffer buf;
+    buf.clear();
+    {
+        boost::shared_ptr<std::ifstream> input_file(new std::ifstream(BINARY_DIR "/input.txt", std::ifstream::binary));
+        if(!input_file->is_open()) {std::cerr << "No input file(" << std::endl;return 1;}
+        Message msg;
 
-		// string_ptr sp2 = ps; // uncomment to get in troubles
-	}
-	{
-		int_array ia = f3();
-		std::cout << ia[5] << std::endl;
-	}
+        while(*input_file >> msg) // while stream is good
+            buf << msg;
+    }
+    std::map<boost::uint32_t, double> average = buf.get_average();
+    boost::shared_ptr<std::ofstream> output_file(new std::ofstream(BINARY_DIR "/output.txt", std::ofstream::binary));
+    for( std::map<boost::uint32_t, double>::iterator it = average.begin(); it!=average.end(); ++it)
+    {
+        output_file->write((char*)&(it->first), sizeof(boost::uint32_t));
+        output_file->write((char*)&(it->second), sizeof(double));
+        //std::cout << it->first << ' ' << it->second << std::endl;
+    }
 }
 
