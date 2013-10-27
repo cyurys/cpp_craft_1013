@@ -1,6 +1,6 @@
 
 export BOOST_ROOT=/usr/boost_1_47_0
-export SOLUTION_NAME=boost_using_example
+export SOLUTION_NAME=solution_to_2nd_week
 
 export BUILD_TYPE=Debug
 if [ "$1" == 'Release' ];
