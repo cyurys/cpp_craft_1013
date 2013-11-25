@@ -5,7 +5,7 @@
 task4_4::a_message::a_message( std::istream& inp )
 {
 	inp.read( content_, content_size );
-	if ( inp.eof() )
+    if ( inp.eof() )
 		throw std::logic_error("bad input stream, a_message cannot be readed");
 }
 
@@ -24,5 +24,11 @@ const char task4_4::a_message::type() const
 }
 const std::string task4_4::a_message::str() const
 {
-	return "";
+    std::string msg = std::string("a_message(");
+    for(size_t i = 0; i < content_size; i++)
+    {
+        msg.push_back(content_[i]);
+    }
+    msg.push_back(')');
+    return msg;
 }
